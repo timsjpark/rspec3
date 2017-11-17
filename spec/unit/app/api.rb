@@ -14,9 +14,9 @@ module ExpenseTracker
     let(:ledger) { instance_double('ExpenseTracker::Ledger') }
 
     describe 'POST /expenses' do
-      context 'when the expense is successfully recorded' do
-        let(:expense) { { 'some' => 'data' } }
+      let(:expense) { { 'some' => 'data' } }
 
+      context 'when the expense is successfully recorded' do
         before do
           allow(ledger).to receive(:record)
             .with(expense)
@@ -38,8 +38,24 @@ module ExpenseTracker
       end
 
       context 'when the expense fails validation' do
-        it 'returns an error message'
-        it 'responds with a 422'
+        before do
+          allow(ledger).to receive(:record)
+            .with(expense)
+            .and_return(RecordResult.new(false, 417, 'Expense incomplete'))
+        end
+
+        it 'returns an error message' do
+          post '/expenses', JSON.generate(expense)
+
+          parsed = JSON.parse(last_response.body)
+          expect(parsed).to include('error' => 'Expense incomplete')
+        end
+
+        it 'responds with a 422' do
+          post '/expenses', JSON.generate(expense)
+
+          expect(last_response.status).to eq(422)
+        end
       end
     end
   end
